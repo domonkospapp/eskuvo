@@ -1,37 +1,204 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useState } from 'react'
+
+type Choices = {
+  starter: string | null
+  soup: string | null
+  main: string | null
+}
+
+type GuestRecord = {
+  name: string
+  attending: boolean
+  starter: string | null
+  soup: string | null
+  mainCourse: string | null
+  dessert: string | null
+  allergies: string | null
+  submittedAt: string
+}
+
+const DESSERT = 'Étcsokoládé mousse sárgabarackkal és levendulával'
+
+async function apiSet(key: string, value: string) {
+  const res = await fetch('/api/guests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, value })
+  })
+  return res.ok
+}
+
+async function apiListKeys(prefix: string) {
+  const res = await fetch('/api/guests?list=true')
+  if (!res.ok) return []
+  const data = await res.json()
+  return (data.keys as string[]).filter((k) => k.startsWith(prefix))
+}
+
+async function apiGet(key: string) {
+  const res = await fetch('/api/guests?key=' + encodeURIComponent(key))
+  if (!res.ok) return null
+  const data = await res.json()
+  return data.value as string
+}
+
+function esc(s: string | null | undefined) {
+  return s == null ? '' : s
+}
 
 export default function Home() {
-  useEffect(() => {
-    (window as any).storage = {
-      async set(key: string, value: string) {
-        const res = await fetch('/api/guests', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key, value })
-        })
-        return res.ok
-      },
-      async get(key: string) {
-        const res = await fetch('/api/guests?key=' + encodeURIComponent(key))
-        if (res.ok) {
-          const data = await res.json()
-          return { value: data.value }
-        }
-        return null
-      },
-      async list(prefix: string) {
-        const res = await fetch('/api/guests?list=true')
-        if (res.ok) {
-          const data = await res.json()
-          const keys = data.keys.filter((k: string) => k.startsWith(prefix))
-          return { keys }
-        }
-        return { keys: [] }
-      }
+  const [name, setName] = useState('')
+  const [allergies, setAllergies] = useState('')
+  const [attending, setAttending] = useState<boolean | null>(null)
+  const [choices, setChoices] = useState<Choices>({ starter: null, soup: null, main: null })
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [submittedName, setSubmittedName] = useState('')
+  const [counter, setCounter] = useState<number | null>(null)
+
+  const [adminOpen, setAdminOpen] = useState(false)
+  const [adminLoading, setAdminLoading] = useState(false)
+  const [adminError, setAdminError] = useState('')
+  const [records, setRecords] = useState<GuestRecord[]>([])
+
+  function selectAttend(val: boolean) {
+    setAttending(val)
+    if (!val) {
+      setChoices({ starter: null, soup: null, main: null })
     }
-  }, [])
+    setError('')
+  }
+
+  function selectOption(group: keyof Choices, value: string) {
+    setChoices((prev) => ({ ...prev, [group]: value }))
+    setError('')
+  }
+
+  async function refreshCounter() {
+    const keys = await apiListKeys('guest:')
+    setCounter(keys.length)
+  }
+
+  async function handleSubmit() {
+    const trimmedName = name.trim()
+    const trimmedAllergies = allergies.trim()
+
+    if (!trimmedName) {
+      setError('Kérjük, add meg a neved.')
+      return
+    }
+    if (attending === null) {
+      setError('Kérjük, jelezd, részt tudsz-e venni.')
+      return
+    }
+    if (attending === true) {
+      if (!choices.starter) { setError('Kérjük, válassz előételt.'); return }
+      if (!choices.soup) { setError('Kérjük, válassz levest.'); return }
+      if (!choices.main) { setError('Kérjük, válassz főételt.'); return }
+    }
+
+    setSubmitting(true)
+    setError('')
+
+    const record: GuestRecord = {
+      name: trimmedName,
+      attending,
+      starter: attending ? choices.starter : null,
+      soup: attending ? choices.soup : null,
+      mainCourse: attending ? choices.main : null,
+      dessert: attending ? DESSERT : null,
+      allergies: trimmedAllergies || null,
+      submittedAt: new Date().toISOString()
+    }
+
+    const key = 'guest:' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)
+
+    try {
+      const ok = await apiSet(key, JSON.stringify(record))
+      if (!ok) throw new Error('Storage write failed')
+      setSubmittedName(trimmedName)
+      setSubmitted(true)
+      refreshCounter()
+    } catch (err) {
+      setSubmitting(false)
+      setError('Hiba történt a küldés során. Kérjük, próbáld újra.')
+    }
+  }
+
+  async function loadRecords() {
+    const keys = await apiListKeys('guest:')
+    const result: GuestRecord[] = []
+    for (let i = 0; i < keys.length; i += 8) {
+      const batch = keys.slice(i, i + 8)
+      const values = await Promise.all(batch.map((k) => apiGet(k).catch(() => null)))
+      values.forEach((v) => {
+        if (!v) return
+        try {
+          result.push(JSON.parse(v))
+        } catch {
+          // skip malformed record
+        }
+      })
+    }
+    result.sort((a, b) => (a.submittedAt || '').localeCompare(b.submittedAt || ''))
+    return result
+  }
+
+  async function refreshAdmin() {
+    setAdminLoading(true)
+    setAdminError('')
+    try {
+      const recs = await loadRecords()
+      setRecords(recs)
+    } catch {
+      setAdminError('Nem sikerült betölteni a listát. Próbáld újra.')
+    } finally {
+      setAdminLoading(false)
+    }
+  }
+
+  function toggleAdmin() {
+    const next = !adminOpen
+    setAdminOpen(next)
+    if (next) {
+      refreshAdmin()
+    }
+  }
+
+  function tally(field: 'starter' | 'soup' | 'mainCourse') {
+    const counts: Record<string, number> = {}
+    records.forEach((r) => {
+      if (r.attending && r[field]) {
+        const v = r[field] as string
+        counts[v] = (counts[v] || 0) + 1
+      }
+    })
+    return counts
+  }
+
+  function downloadCsv() {
+    const head = ['Nev', 'Jon', 'Eloetel', 'Leves', 'Foetel', 'Desszert', 'Allergia', 'Idopont']
+    const rows = records.map((r) => [
+      r.name, r.attending ? 'Igen' : 'Nem', r.starter || '', r.soup || '',
+      r.mainCourse || '', r.dessert || '', r.allergies || '', r.submittedAt || ''
+    ])
+    const csv = [head, ...rows]
+      .map((row) => row.map((cell) => '"' + String(cell).replace(/"/g, '""') + '"').join(','))
+      .join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'vendeglista.csv'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
+  const yes = records.filter((r) => r.attending)
+  const no = records.filter((r) => !r.attending)
+  const allergyList = yes.filter((r) => r.allergies)
 
   return (
     <>
@@ -51,134 +218,277 @@ export default function Home() {
       </div>
 
       <div className="wrap">
-        <section className="card" id="form-section">
-          <h2>Kérjük, jelezd részvételed</h2>
-          <p className="sub">Válaszodat és a menüválasztást ezen az oldalon rögzítjük.</p>
+        {!submitted && (
+          <section className="card">
+            <h2>Kérjük, jelezd részvételed</h2>
+            <p className="sub">Válaszodat és a menüválasztást ezen az oldalon rögzítjük.</p>
 
-          <div style={{marginBottom: '22px'}}>
-            <label className="field-label" htmlFor="guest-name">Neved</label>
-            <input type="text" id="guest-name" placeholder="Kovács Anna" autoComplete="name" />
-          </div>
-
-          <div style={{marginBottom: '8px'}}>
-            <label className="field-label">Részvétel</label>
-            <div className="attend-row">
-              <div className="toggle-btn" id="btn-yes" role="button" tabIndex={0}>Örömmel részt veszek</div>
-              <div className="toggle-btn" id="btn-no" role="button" tabIndex={0}>Sajnos nem tudok részt venni</div>
+            <div style={{marginBottom: '22px'}}>
+              <label className="field-label" htmlFor="guest-name">Neved</label>
+              <input
+                type="text"
+                id="guest-name"
+                placeholder="Kovács Anna"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
             </div>
-          </div>
 
-          <div className="menu-card" id="menu-block">
-            <p style={{fontSize: '13px', color: '#8a7d6c', fontStyle: 'italic', margin: '28px 0 20px'}}>Fogásonként külön-külön választhatsz — bátran kombinálhatod a hagyományos és a vegán opciókat.</p>
-
-            <div className="course-block">
-              <label className="field-label">Előétel</label>
-              <div className="main-options">
-                <div className="main-option" data-group="starter" data-value="Kacsamáj terrine">
-                  <div className="main-option-head"><span className="radio-dot"></span> Kacsamáj terrine</div>
-                  <div className="main-option-detail"><p className="course-text">Fonott kaláccsal és Tokaji aszú géllel</p></div>
-                </div>
-                <div className="main-option" data-group="starter" data-value="Füstölt padlizsánkrém (vegán)">
-                  <div className="main-option-head"><span className="radio-dot"></span> Füstölt padlizsánkrém <span className="tag">VEGÁN</span> <span className="tag">GM</span></div>
-                  <div className="main-option-detail"><p className="course-text">Paprika carpaccióval, pirított tökmaggal és lencseropogóssal</p></div>
-                </div>
+            <div style={{marginBottom: '8px'}}>
+              <label className="field-label">Részvétel</label>
+              <div className="attend-row">
+                <div
+                  className={'toggle-btn' + (attending === true ? ' selected' : '')}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => selectAttend(true)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAttend(true) } }}
+                >Örömmel részt veszek</div>
+                <div
+                  className={'toggle-btn' + (attending === false ? ' selected' : '')}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => selectAttend(false)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAttend(false) } }}
+                >Sajnos nem tudok részt venni</div>
               </div>
             </div>
 
-            <div className="course-block">
-              <label className="field-label">Leves</label>
-              <div className="main-options">
-                <div className="main-option" data-group="soup" data-value="Újházi tyúkhúsleves">
-                  <div className="main-option-head"><span className="radio-dot"></span> Újházi tyúkhúsleves <span className="tag">LM</span></div>
-                  <div className="main-option-detail"><p className="course-text">Vele főtt zöldségekkel és házi tésztával</p></div>
+            <div className={'menu-card' + (attending === true ? ' open' : '')}>
+              <p style={{fontSize: '13px', color: '#8a7d6c', fontStyle: 'italic', margin: '28px 0 20px'}}>Fogásonként külön-külön választhatsz — bátran kombinálhatod a hagyományos és a vegán opciókat.</p>
+
+              <div className="course-block">
+                <label className="field-label">Előétel</label>
+                <div className="main-options">
+                  <div
+                    className={'main-option' + (choices.starter === 'Kacsamáj terrine' ? ' selected' : '')}
+                    onClick={() => selectOption('starter', 'Kacsamáj terrine')}
+                  >
+                    <div className="main-option-head"><span className="radio-dot"></span> Kacsamáj terrine</div>
+                    <div className="main-option-detail"><p className="course-text">Fonott kaláccsal és Tokaji aszú géllel</p></div>
+                  </div>
+                  <div
+                    className={'main-option' + (choices.starter === 'Füstölt padlizsánkrém (vegán)' ? ' selected' : '')}
+                    onClick={() => selectOption('starter', 'Füstölt padlizsánkrém (vegán)')}
+                  >
+                    <div className="main-option-head"><span className="radio-dot"></span> Füstölt padlizsánkrém <span className="tag">VEGÁN</span> <span className="tag">GM</span></div>
+                    <div className="main-option-detail"><p className="course-text">Paprika carpaccióval, pirított tökmaggal és lencseropogóssal</p></div>
+                  </div>
                 </div>
-                <div className="main-option" data-group="soup" data-value="Fehérspárga veluté (vegán)">
-                  <div className="main-option-head"><span className="radio-dot"></span> Fehérspárga veluté <span className="tag">VEGÁN</span> <span className="tag">GM</span></div>
-                  <div className="main-option-detail"><p className="course-text">Marinált zöldspárgával és puffasztott hajdinával</p></div>
+              </div>
+
+              <div className="course-block">
+                <label className="field-label">Leves</label>
+                <div className="main-options">
+                  <div
+                    className={'main-option' + (choices.soup === 'Újházi tyúkhúsleves' ? ' selected' : '')}
+                    onClick={() => selectOption('soup', 'Újházi tyúkhúsleves')}
+                  >
+                    <div className="main-option-head"><span className="radio-dot"></span> Újházi tyúkhúsleves <span className="tag">LM</span></div>
+                    <div className="main-option-detail"><p className="course-text">Vele főtt zöldségekkel és házi tésztával</p></div>
+                  </div>
+                  <div
+                    className={'main-option' + (choices.soup === 'Fehérspárga veluté (vegán)' ? ' selected' : '')}
+                    onClick={() => selectOption('soup', 'Fehérspárga veluté (vegán)')}
+                  >
+                    <div className="main-option-head"><span className="radio-dot"></span> Fehérspárga veluté <span className="tag">VEGÁN</span> <span className="tag">GM</span></div>
+                    <div className="main-option-detail"><p className="course-text">Marinált zöldspárgával és puffasztott hajdinával</p></div>
+                  </div>
                 </div>
+              </div>
+
+              <div className="course-block">
+                <label className="field-label">Főétel</label>
+                <div className="main-options">
+                  <div
+                    className={'main-option' + (choices.main === 'Roston sült tőkehal filé' ? ' selected' : '')}
+                    onClick={() => selectOption('main', 'Roston sült tőkehal filé')}
+                  >
+                    <div className="main-option-head"><span className="radio-dot"></span> Roston sült tőkehal filé <span className="tag">GM</span></div>
+                    <div className="main-option-detail"><p className="course-text">Karfiollal, beluga lencsével, citrusos mángolddal és fehérboros kapormártással</p></div>
+                  </div>
+                  <div
+                    className={'main-option' + (choices.main === 'Érlelt marha bélszín' ? ' selected' : '')}
+                    onClick={() => selectOption('main', 'Érlelt marha bélszín')}
+                  >
+                    <div className="main-option-head"><span className="radio-dot"></span> Érlelt marha bélszín <span className="tag">GM</span> <span className="tag">LM</span></div>
+                    <div className="main-option-detail"><p className="course-text">Grillezett nyári zöldségekkel, erdei gombákkal és vörösboros jus-vel</p></div>
+                  </div>
+                  <div
+                    className={'main-option' + (choices.main === 'Chicken Supreme' ? ' selected' : '')}
+                    onClick={() => selectOption('main', 'Chicken Supreme')}
+                  >
+                    <div className="main-option-head"><span className="radio-dot"></span> Chicken Supreme</div>
+                    <div className="main-option-detail"><p className="course-text">Csirkemell szupreme</p></div>
+                  </div>
+                  <div
+                    className={'main-option' + (choices.main === 'Faszénen sült zeller steak (vegán)' ? ' selected' : '')}
+                    onClick={() => selectOption('main', 'Faszénen sült zeller steak (vegán)')}
+                  >
+                    <div className="main-option-head"><span className="radio-dot"></span> Faszénen sült zeller steak <span className="tag">VEGÁN</span> <span className="tag">GM</span></div>
+                    <div className="main-option-detail"><p className="course-text">Grillezett nyári zöldségekkel és vörösboros jus-vel</p></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="printed-menu" style={{marginTop: '8px'}}>
+                <p className="course-label" style={{marginTop: 0}}>Desszert <span className="tag">VEGÁN</span> <span className="tag">GM</span></p>
+                <p className="course-text">{DESSERT}</p>
+                <p style={{fontSize: '13px', color: '#8a7d6c', fontStyle: 'italic', margin: '8px 0 0'}}>Ez a desszert eleve vegán, így minden vendégnek ugyanaz kerül felszolgálásra — nincs külön választás.</p>
+              </div>
+
+              <div style={{marginTop: '26px'}}>
+                <label className="field-label" htmlFor="allergies">Ételallergia / érzékenység</label>
+                <textarea
+                  id="allergies"
+                  placeholder="pl. mogyoróallergia, laktózérzékenység — ha nincs, hagyd üresen"
+                  value={allergies}
+                  onChange={(e) => setAllergies(e.target.value)}
+                ></textarea>
               </div>
             </div>
 
-            <div className="course-block">
-              <label className="field-label">Főétel</label>
-              <div className="main-options">
-                <div className="main-option" data-group="main" data-value="Roston sült tőkehal filé">
-                  <div className="main-option-head"><span className="radio-dot"></span> Roston sült tőkehal filé <span className="tag">GM</span></div>
-                  <div className="main-option-detail"><p className="course-text">Karfiollal, beluga lencsével, citrusos mángolddal és fehérboros kapormártással</p></div>
-                </div>
-                <div className="main-option" data-group="main" data-value="Érlelt marha bélszín">
-                  <div className="main-option-head"><span className="radio-dot"></span> Érlelt marha bélszín <span className="tag">GM</span> <span className="tag">LM</span></div>
-                  <div className="main-option-detail"><p className="course-text">Grillezett nyári zöldségekkel, erdei gombákkal és vörösboros jus-vel</p></div>
-                </div>
-                <div className="main-option" data-group="main" data-value="Chicken Supreme">
-                  <div className="main-option-head"><span className="radio-dot"></span> Chicken Supreme</div>
-                  <div className="main-option-detail"><p className="course-text">Csirkemell szupreme</p></div>
-                </div>
-                <div className="main-option" data-group="main" data-value="Faszénen sült zeller steak (vegán)">
-                  <div className="main-option-head"><span className="radio-dot"></span> Faszénen sült zeller steak <span className="tag">VEGÁN</span> <span className="tag">GM</span></div>
-                  <div className="main-option-detail"><p className="course-text">Grillezett nyári zöldségekkel és vörösboros jus-vel</p></div>
-                </div>
-              </div>
+            {error && <p className="error-text" style={{display: 'block'}}>{error}</p>}
+            <button className="submit-btn" disabled={submitting} onClick={handleSubmit}>
+              {submitting ? 'Küldés...' : 'Visszajelzés elküldése'}
+            </button>
+          </section>
+        )}
+
+        {submitted && (
+          <section className="card">
+            <div className="confirmation">
+              <div className="checkmark">✓</div>
+              {attending ? (
+                <>
+                  <h2>Köszönjük, {submittedName}!</h2>
+                  <p>Örülünk, hogy velünk ünnepelsz. Menüválasztásod rögzítettük.</p>
+                </>
+              ) : (
+                <>
+                  <h2>Köszönjük a visszajelzést, {submittedName}.</h2>
+                  <p>Sajnáljuk, hogy nem tudsz jönni — nagyon fogsz hiányozni.</p>
+                </>
+              )}
             </div>
+          </section>
+        )}
 
-            <div className="printed-menu" style={{marginTop: '8px'}}>
-              <p className="course-label" style={{marginTop: 0}}>Desszert <span className="tag">VEGÁN</span> <span className="tag">GM</span></p>
-              <p className="course-text">Étcsokoládé mousse sárgabarackkal és levendulával</p>
-              <p style={{fontSize: '13px', color: '#8a7d6c', fontStyle: 'italic', margin: '8px 0 0'}}>Ez a desszert eleve vegán, így minden vendégnek ugyanaz kerül felszolgálásra — nincs külön választás.</p>
-            </div>
-
-            <div style={{marginTop: '26px'}}>
-              <label className="field-label" htmlFor="allergies">Ételallergia / érzékenység</label>
-              <textarea id="allergies" placeholder="pl. mogyoróallergia, laktózérzékenység — ha nincs, hagyd üresen"></textarea>
-            </div>
-          </div>
-
-          <p className="error-text" id="error-text"></p>
-          <button className="submit-btn" id="submit-btn">Visszajelzés elküldése</button>
-        </section>
-
-        <section className="card" id="confirmation-section" style={{display: 'none'}}>
-          <div className="confirmation">
-            <div className="checkmark">✓</div>
-            <h2 id="conf-title">Köszönjük!</h2>
-            <p id="conf-text">Visszajelzésed rögzítettük.</p>
-          </div>
-        </section>
-
-        <p className="counter" id="counter-text"></p>
+        {counter !== null && counter > 0 && (
+          <p className="counter">Eddig {counter} visszajelzés érkezett.</p>
+        )}
 
         <p style={{textAlign: 'center', marginTop: '8px'}}>
-          <a href="#" id="admin-link" style={{fontSize: '13px', color: '#a89a86', textDecoration: 'none', borderBottom: '1px solid #ddd2be'}}>Szervezői nézet</a>
+          <a
+            href="#"
+            style={{fontSize: '13px', color: '#a89a86', textDecoration: 'none', borderBottom: '1px solid #ddd2be'}}
+            onClick={(e) => { e.preventDefault(); toggleAdmin() }}
+          >{adminOpen ? 'Szervezői nézet elrejtése' : 'Szervezői nézet'}</a>
         </p>
 
-        <section className="card" id="admin-section" style={{display: 'none'}}>
-          <h2>Vendéglista</h2>
-          <p className="sub">Beérkezett visszajelzések és összesítés a cateringnek.</p>
+        {adminOpen && (
+          <section className="card">
+            <h2>Vendéglista</h2>
+            <p className="sub">Beérkezett visszajelzések és összesítés a cateringnek.</p>
 
-          <div id="admin-summary"></div>
+            {!adminLoading && !adminError && (
+              <div>
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(120px,1fr))', gap: '12px', marginBottom: '20px'}}>
+                  <div style={{background: 'var(--cream)', padding: '14px 16px', border: '1px solid var(--cream-deep)'}}>
+                    <p className="course-label" style={{margin: '0 0 4px'}}>Összes válasz</p>
+                    <p style={{fontSize: '26px', margin: 0, fontFamily: "'Cormorant Garamond',serif"}}>{records.length}</p>
+                  </div>
+                  <div style={{background: 'var(--cream)', padding: '14px 16px', border: '1px solid var(--cream-deep)'}}>
+                    <p className="course-label" style={{margin: '0 0 4px'}}>Jön</p>
+                    <p style={{fontSize: '26px', margin: 0, fontFamily: "'Cormorant Garamond',serif"}}>{yes.length}</p>
+                  </div>
+                  <div style={{background: 'var(--cream)', padding: '14px 16px', border: '1px solid var(--cream-deep)'}}>
+                    <p className="course-label" style={{margin: '0 0 4px'}}>Nem jön</p>
+                    <p style={{fontSize: '26px', margin: 0, fontFamily: "'Cormorant Garamond',serif"}}>{no.length}</p>
+                  </div>
+                </div>
 
-          <div style={{overflowX: 'auto', marginTop: '26px'}}>
-            <table id="admin-table" style={{width: '100%', borderCollapse: 'collapse', fontSize: '14.5px'}}>
-              <thead>
-                <tr style={{borderBottom: '1.5px solid var(--wine)'}}>
-                  <th style={{textAlign: 'left', padding: '8px 10px 8px 0', fontWeight: '500', color: 'var(--wine)'}}>Név</th>
-                  <th style={{textAlign: 'left', padding: '8px 10px', fontWeight: '500', color: 'var(--wine)'}}>Jön?</th>
-                  <th style={{textAlign: 'left', padding: '8px 10px', fontWeight: '500', color: 'var(--wine)'}}>Előétel</th>
-                  <th style={{textAlign: 'left', padding: '8px 10px', fontWeight: '500', color: 'var(--wine)'}}>Leves</th>
-                  <th style={{textAlign: 'left', padding: '8px 10px', fontWeight: '500', color: 'var(--wine)'}}>Főétel</th>
-                  <th style={{textAlign: 'left', padding: '8px 0 8px 10px', fontWeight: '500', color: 'var(--wine)'}}>Allergia</th>
-                </tr>
-              </thead>
-              <tbody id="admin-tbody"></tbody>
-            </table>
-          </div>
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '12px'}}>
+                  {(['starter', 'soup', 'mainCourse'] as const).map((field) => {
+                    const title = field === 'starter' ? 'Előétel' : field === 'soup' ? 'Leves' : 'Főétel'
+                    const counts = tally(field)
+                    const entries = Object.entries(counts)
+                    return (
+                      <div key={field} style={{background: 'var(--cream)', padding: '14px 16px', border: '1px solid var(--cream-deep)'}}>
+                        <p className="course-label" style={{margin: '0 0 8px'}}>{title}</p>
+                        {entries.length === 0 ? (
+                          <div style={{fontSize: '14px', color: '#8a7d6c', fontStyle: 'italic'}}>—</div>
+                        ) : entries.map(([k, v]) => (
+                          <div key={k} style={{display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '3px 0', fontSize: '14.5px'}}>
+                            <span>{k}</span><span style={{fontWeight: 500}}>{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })}
+                </div>
 
-          <div style={{display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap'}}>
-            <button className="submit-btn" id="refresh-btn" style={{flex: 1, minWidth: '160px', marginTop: 0}}>Lista frissítése</button>
-            <button className="submit-btn" id="csv-btn" style={{flex: 1, minWidth: '160px', marginTop: 0, background: '#fff', color: 'var(--wine)', border: '1.5px solid var(--wine)'}}>CSV letöltése</button>
-          </div>
-          <p style={{fontSize: '13px', color: '#8a7d6c', fontStyle: 'italic', marginTop: '14px'}}>Ez a nézet mindenki számára elérhető, aki megtalálja a linket — a végleges oldalról érdemes eltávolítani, vagy külön fájlban tartani.</p>
-        </section>
+                {allergyList.length > 0 && (
+                  <div style={{background: '#FBF2F2', border: '1px solid #E8D4D4', padding: '14px 16px', marginTop: '12px'}}>
+                    <p className="course-label" style={{margin: '0 0 8px', color: 'var(--error)'}}>Allergiák</p>
+                    {allergyList.map((r, i) => (
+                      <div key={i} style={{fontSize: '14.5px', padding: '2px 0'}}>
+                        <strong style={{fontWeight: 500}}>{r.name}:</strong> {r.allergies}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div style={{overflowX: 'auto', marginTop: '26px'}}>
+              <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '14.5px'}}>
+                <thead>
+                  <tr style={{borderBottom: '1.5px solid var(--wine)'}}>
+                    <th style={{textAlign: 'left', padding: '8px 10px 8px 0', fontWeight: 500, color: 'var(--wine)'}}>Név</th>
+                    <th style={{textAlign: 'left', padding: '8px 10px', fontWeight: 500, color: 'var(--wine)'}}>Jön?</th>
+                    <th style={{textAlign: 'left', padding: '8px 10px', fontWeight: 500, color: 'var(--wine)'}}>Előétel</th>
+                    <th style={{textAlign: 'left', padding: '8px 10px', fontWeight: 500, color: 'var(--wine)'}}>Leves</th>
+                    <th style={{textAlign: 'left', padding: '8px 10px', fontWeight: 500, color: 'var(--wine)'}}>Főétel</th>
+                    <th style={{textAlign: 'left', padding: '8px 0 8px 10px', fontWeight: 500, color: 'var(--wine)'}}>Allergia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminLoading && (
+                    <tr><td colSpan={6} style={{padding: '20px 0', color: '#8a7d6c', fontStyle: 'italic'}}>Betöltés...</td></tr>
+                  )}
+                  {!adminLoading && adminError && (
+                    <tr><td colSpan={6} style={{padding: '20px 0', color: '#8A2E2E'}}>{adminError}</td></tr>
+                  )}
+                  {!adminLoading && !adminError && records.length === 0 && (
+                    <tr><td colSpan={6} style={{padding: '20px 0', color: '#8a7d6c', fontStyle: 'italic'}}>Még nem érkezett visszajelzés.</td></tr>
+                  )}
+                  {!adminLoading && !adminError && records.map((r, i) => (
+                    <tr key={i} style={{borderBottom: '1px solid var(--cream-deep)'}}>
+                      <td style={{padding: '9px 10px 9px 0'}}>{esc(r.name)}</td>
+                      <td style={{padding: '9px 10px', color: r.attending ? 'var(--olive)' : '#a08a8a'}}>{r.attending ? 'Igen' : 'Nem'}</td>
+                      <td style={{padding: '9px 10px'}}>{esc(r.starter) || '—'}</td>
+                      <td style={{padding: '9px 10px'}}>{esc(r.soup) || '—'}</td>
+                      <td style={{padding: '9px 10px'}}>{esc(r.mainCourse) || '—'}</td>
+                      <td style={{padding: '9px 0 9px 10px'}}>{esc(r.allergies) || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap'}}>
+              <button className="submit-btn" style={{flex: 1, minWidth: '160px', marginTop: 0}} onClick={refreshAdmin}>Lista frissítése</button>
+              <button
+                className="submit-btn"
+                style={{flex: 1, minWidth: '160px', marginTop: 0, background: '#fff', color: 'var(--wine)', border: '1.5px solid var(--wine)'}}
+                onClick={downloadCsv}
+              >CSV letöltése</button>
+            </div>
+            <p style={{fontSize: '13px', color: '#8a7d6c', fontStyle: 'italic', marginTop: '14px'}}>Ez a nézet mindenki számára elérhető, aki megtalálja a linket — a végleges oldalról érdemes eltávolítani, vagy külön fájlban tartani.</p>
+          </section>
+        )}
 
         <footer className="divider-foot">
           <svg className="vine" viewBox="0 0 400 24" xmlns="http://www.w3.org/2000/svg" role="presentation">
@@ -191,238 +501,6 @@ export default function Home() {
           </svg>
         </footer>
       </div>
-
-      <script dangerouslySetInnerHTML={{__html: `
-(function(){
-  var attending = null;
-  var choices = { starter: null, soup: null, main: null };
-
-  var btnYes = document.getElementById('btn-yes');
-  var btnNo = document.getElementById('btn-no');
-  var menuBlock = document.getElementById('menu-block');
-  var errorText = document.getElementById('error-text');
-  var submitBtn = document.getElementById('submit-btn');
-
-  function selectAttend(val){
-    attending = val;
-    btnYes.classList.toggle('selected', val === true);
-    btnNo.classList.toggle('selected', val === false);
-    if(val === true){
-      menuBlock.classList.add('open');
-    } else {
-      menuBlock.classList.remove('open');
-      choices = { starter: null, soup: null, main: null };
-      document.querySelectorAll('.main-option').forEach(function(el){ el.classList.remove('selected'); });
-    }
-    errorText.style.display = 'none';
-  }
-
-  btnYes.addEventListener('click', function(){ selectAttend(true); });
-  btnNo.addEventListener('click', function(){ selectAttend(false); });
-  [btnYes, btnNo].forEach(function(el){
-    el.addEventListener('keydown', function(e){
-      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); el.click(); }
-    });
-  });
-
-  document.querySelectorAll('.main-option').forEach(function(opt){
-    opt.addEventListener('click', function(){
-      var group = opt.getAttribute('data-group');
-      choices[group] = opt.getAttribute('data-value');
-      document.querySelectorAll('.main-option[data-group="' + group + '"]').forEach(function(el){ el.classList.remove('selected'); });
-      opt.classList.add('selected');
-      errorText.style.display = 'none';
-    });
-  });
-
-  function showError(msg){
-    errorText.textContent = msg;
-    errorText.style.display = 'block';
-  }
-
-  async function updateCounter(){
-    var counterEl = document.getElementById('counter-text');
-    try{
-      var list = await window.storage.list('guest:');
-      var count = (list && list.keys) ? list.keys.length : 0;
-      if(count > 0){
-        counterEl.textContent = 'Eddig ' + count + ' visszajelzés érkezett.';
-      }
-    }catch(err){
-      counterEl.textContent = '';
-    }
-  }
-
-  submitBtn.addEventListener('click', async function(){
-    var name = document.getElementById('guest-name').value.trim();
-    var allergies = document.getElementById('allergies').value.trim();
-
-    if(!name){
-      showError('Kérjük, add meg a neved.');
-      return;
-    }
-    if(attending === null){
-      showError('Kérjük, jelezd, részt tudsz-e venni.');
-      return;
-    }
-    if(attending === true){
-      if(!choices.starter){ showError('Kérjük, válassz előételt.'); return; }
-      if(!choices.soup){ showError('Kérjük, válassz levest.'); return; }
-      if(!choices.main){ showError('Kérjük, válassz főételt.'); return; }
-    }
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Küldés...';
-
-    var record = {
-      name: name,
-      attending: attending,
-      starter: attending ? choices.starter : null,
-      soup: attending ? choices.soup : null,
-      mainCourse: attending ? choices.main : null,
-      dessert: attending ? 'Étcsokoládé mousse sárgabarackkal és levendulával' : null,
-      allergies: allergies || null,
-      submittedAt: new Date().toISOString()
-    };
-
-    var key = 'guest:' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-
-    try{
-      var result = await window.storage.set(key, JSON.stringify(record));
-      if(!result){
-        throw new Error('Storage write returned no result');
-      }
-      document.getElementById('form-section').style.display = 'none';
-      var confSection = document.getElementById('confirmation-section');
-      confSection.style.display = 'block';
-      if(attending){
-        document.getElementById('conf-title').textContent = 'Köszönjük, ' + name + '!';
-        document.getElementById('conf-text').textContent = 'Örülünk, hogy velünk ünnepelsz. Menüválasztásod rögzítettük.';
-      } else {
-        document.getElementById('conf-title').textContent = 'Köszönjük a visszajelzést, ' + name + '.';
-        document.getElementById('conf-text').textContent = 'Sajnáljuk, hogy nem tudsz jönni — nagyon fogsz hiányozni.';
-      }
-      updateCounter();
-    }catch(err){
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Visszajelzés elküldése';
-      showError('Hiba történt a küldés során. Kérjük, próbáld újra.');
-    }
-  });
-
-  var loadedRecords = [];
-
-  async function loadRecords(){
-    var list = await window.storage.list('guest:');
-    var keys = (list && list.keys) ? list.keys : [];
-    var records = [];
-    for(var i = 0; i < keys.length; i += 8){
-      var batch = keys.slice(i, i + 8);
-      var results = await Promise.all(batch.map(function(k){
-        return window.storage.get(k).then(function(r){
-          try { return JSON.parse(r.value); } catch(e){ return null; }
-        }).catch(function(){ return null; });
-      }));
-      results.forEach(function(r){ if(r) records.push(r); });
-    }
-    records.sort(function(a,b){ return (a.submittedAt || '').localeCompare(b.submittedAt || ''); });
-    return records;
-  }
-
-  function tally(records, field){
-    var counts = {};
-    records.forEach(function(r){
-      if(r.attending && r[field]){
-        counts[r[field]] = (counts[r[field]] || 0) + 1;
-      }
-    });
-    return counts;
-  }
-
-  function countBlock(title, counts){
-    var rows = Object.keys(counts).map(function(k){
-      return '<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:14.5px;"><span>' + esc(k) + '</span><span style="font-weight:500;">' + counts[k] + '</span></div>';
-    }).join('');
-    if(!rows){ rows = '<div style="font-size:14px;color:#8a7d6c;font-style:italic;">—</div>'; }
-    return '<div style="background:var(--cream);padding:14px 16px;border:1px solid var(--cream-deep);"><p class="course-label" style="margin:0 0 8px;">' + title + '</p>' + rows + '</div>';
-  }
-
-  function esc(s){
-    return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
-    });
-  }
-
-  function renderAdmin(records){
-    loadedRecords = records;
-    var yes = records.filter(function(r){ return r.attending; });
-    var no = records.filter(function(r){ return !r.attending; });
-
-    var summary = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px;"><div style="background:var(--cream);padding:14px 16px;border:1px solid var(--cream-deep);"><p class="course-label" style="margin:0 0 4px;">Összes válasz</p><p style="font-size:26px;margin:0;font-family:\\'Cormorant Garamond\\',serif;">' + records.length + '</p></div><div style="background:var(--cream);padding:14px 16px;border:1px solid var(--cream-deep);"><p class="course-label" style="margin:0 0 4px;">Jön</p><p style="font-size:26px;margin:0;font-family:\\'Cormorant Garamond\\',serif;">' + yes.length + '</p></div><div style="background:var(--cream);padding:14px 16px;border:1px solid var(--cream-deep);"><p class="course-label" style="margin:0 0 4px;">Nem jön</p><p style="font-size:26px;margin:0;font-family:\\'Cormorant Garamond\\',serif;">' + no.length + '</p></div></div>';
-
-    summary += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">' + countBlock('Előétel', tally(records, 'starter')) + countBlock('Leves', tally(records, 'soup')) + countBlock('Főétel', tally(records, 'mainCourse')) + '</div>';
-
-    var allergyList = yes.filter(function(r){ return r.allergies; });
-    if(allergyList.length){
-      summary += '<div style="background:#FBF2F2;border:1px solid #E8D4D4;padding:14px 16px;margin-top:12px;"><p class="course-label" style="margin:0 0 8px;color:var(--error);">Allergiák</p>' + allergyList.map(function(r){ return '<div style="font-size:14.5px;padding:2px 0;"><strong style="font-weight:500;">' + esc(r.name) + ':</strong> ' + esc(r.allergies) + '</div>'; }).join('') + '</div>';
-    }
-
-    document.getElementById('admin-summary').innerHTML = summary;
-
-    var tbody = document.getElementById('admin-tbody');
-    if(!records.length){
-      tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 0;color:#8a7d6c;font-style:italic;">Még nem érkezett visszajelzés.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = records.map(function(r){
-      return '<tr style="border-bottom:1px solid var(--cream-deep);"><td style="padding:9px 10px 9px 0;">' + esc(r.name) + '</td><td style="padding:9px 10px;color:' + (r.attending ? 'var(--olive)' : '#a08a8a') + ';">' + (r.attending ? 'Igen' : 'Nem') + '</td><td style="padding:9px 10px;">' + esc(r.starter || '—') + '</td><td style="padding:9px 10px;">' + esc(r.soup || '—') + '</td><td style="padding:9px 10px;">' + esc(r.mainCourse || '—') + '</td><td style="padding:9px 0 9px 10px;">' + esc(r.allergies || '—') + '</td></tr>';
-    }).join('');
-  }
-
-  async function refreshAdmin(){
-    var tbody = document.getElementById('admin-tbody');
-    tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 0;color:#8a7d6c;font-style:italic;">Betöltés...</td></tr>';
-    try{
-      renderAdmin(await loadRecords());
-    }catch(err){
-      tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 0;color:#8A2E2E;">Nem sikerült betölteni a listát. Próbáld újra.</td></tr>';
-    }
-  }
-
-  document.getElementById('admin-link').addEventListener('click', function(e){
-    e.preventDefault();
-    var sec = document.getElementById('admin-section');
-    if(sec.style.display === 'none'){
-      sec.style.display = 'block';
-      this.textContent = 'Szervezői nézet elrejtése';
-      refreshAdmin();
-    } else {
-      sec.style.display = 'none';
-      this.textContent = 'Szervezői nézet';
-    }
-  });
-
-  document.getElementById('refresh-btn').addEventListener('click', refreshAdmin);
-
-  document.getElementById('csv-btn').addEventListener('click', function(){
-    var head = ['Nev','Jon','Eloetel','Leves','Foetel','Desszert','Allergia','Idopont'];
-    var rows = loadedRecords.map(function(r){
-      return [r.name, r.attending ? 'Igen' : 'Nem', r.starter || '', r.soup || '', r.mainCourse || '', r.dessert || '', r.allergies || '', r.submittedAt || ''];
-    });
-    var csv = [head].concat(rows).map(function(row){
-      return row.map(function(cell){ return '"' + String(cell).replace(/"/g,'""') + '"'; }).join(',');
-    }).join('\\n');
-    var blob = new Blob(['\\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'vendeglista.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
-
-  updateCounter();
-})();
-      `}}></script>
 
       <style>{`
         :root{
@@ -651,7 +729,6 @@ export default function Home() {
           color:var(--error);
           font-size:14px;
           margin-top:10px;
-          display:none;
         }
         .confirmation{
           text-align:center;
