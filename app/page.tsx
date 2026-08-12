@@ -232,6 +232,12 @@ export default function Home() {
     return counts
   }
 
+  function sanitizeCsvCell(cell: string) {
+    // Neutralize formula injection: a cell starting with =, +, -, or @ can be
+    // interpreted as a formula by Excel/Sheets/LibreOffice when the CSV is opened.
+    return /^[=+\-@]/.test(cell) ? "'" + cell : cell
+  }
+
   function downloadCsv() {
     const head = ['Nev', 'Jon', 'Eloetel', 'Leves', 'Foetel', 'Desszert', 'Allergia', 'Idopont']
     const rows = records.map((r) => [
@@ -239,7 +245,7 @@ export default function Home() {
       r.mainCourse || '', r.dessert || '', r.allergies || '', r.submittedAt || ''
     ])
     const csv = [head, ...rows]
-      .map((row) => row.map((cell) => '"' + String(cell).replace(/"/g, '""') + '"').join(','))
+      .map((row) => row.map((cell) => '"' + sanitizeCsvCell(String(cell)).replace(/"/g, '""') + '"').join(','))
       .join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const a = document.createElement('a')

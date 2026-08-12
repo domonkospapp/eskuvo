@@ -37,12 +37,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    await sql`
+    const result = await sql`
       INSERT INTO guests (key, value)
       VALUES (${key}, ${value}::jsonb)
-      ON CONFLICT (key) DO UPDATE
-      SET value = EXCLUDED.value
+      ON CONFLICT (key) DO NOTHING
     `
+
+    if (result.rowCount === 0) {
+      return NextResponse.json(
+        { error: 'Key already exists' },
+        { status: 409 }
+      )
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
