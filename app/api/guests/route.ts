@@ -1,40 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { sql } from '@vercel/postgres'
 
-const DATA_DIR = '/tmp/eskuvo-data'
-const GUESTS_FILE = path.join(DATA_DIR, 'guests.json')
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true })
-  }
-}
-
-function loadGuests() {
-  ensureDataDir()
+async function initDatabase() {
   try {
-    if (fs.existsSync(GUESTS_FILE)) {
-      const data = fs.readFileSync(GUESTS_FILE, 'utf-8')
-      return JSON.parse(data)
-    }
+    await sql`
+      CREATE TABLE IF NOT EXISTS guests (
+        id SERIAL PRIMARY KEY,
+        key VARCHAR(255) UNIQUE NOT NULL,
+        value JSONB NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `
   } catch (error) {
-    console.error('Error loading guests:', error)
-  }
-  return {}
-}
-
-function saveGuests(guests: Record<string, any>) {
-  ensureDataDir()
-  try {
-    fs.writeFileSync(GUESTS_FILE, JSON.stringify(guests, null, 2))
-  } catch (error) {
-    console.error('Error saving guests:', error)
+    console.error('Error initializing database:', error)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    await initDatabase()
+
     const body = await request.json()
     const { key, value } = body
 
@@ -45,9 +30,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const guests = loadGuests()
-    guests[key] = value
-    saveGuests(guests)
+    await sql`
+      INSERT INTO guests (key, value)
+      VALUES (${key}, ${value}::jsonb)
+      ON CONFLICT (key) DO UPDATE
+      SET value = EXCLUDED.value
+    `
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -61,21 +49,22 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    await initDatabase()
+
     const searchParams = request.nextUrl.searchParams
     const key = searchParams.get('key')
     const list = searchParams.get('list') === 'true'
 
-    const guests = loadGuests()
-
     if (list) {
-      const keys = Object.keys(guests)
+      const result = await sql`SELECT key FROM guests ORDER BY created_at ASC`
+      const keys = result.rows.map((row: any) => row.key)
       return NextResponse.json({ keys })
     }
 
     if (key) {
-      const value = guests[key]
-      if (value !== undefined) {
-        return NextResponse.json({ value })
+      const result = await sql`SELECT value FROM guests WHERE key = ${key}`
+      if (result.rows.length > 0) {
+        return NextResponse.json({ value: result.rows[0].value })
       }
       return NextResponse.json(
         { error: 'Key not found' },
@@ -83,6 +72,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const result = await sql`SELECT key, value FROM guests`
+    const guests: Record<string, any> = {}
+    result.rows.forEach((row: any) => {
+      guests[row.key] = row.value
+    })
     return NextResponse.json(guests)
   } catch (error) {
     console.error('Error in GET:', error)
