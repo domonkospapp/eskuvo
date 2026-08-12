@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@vercel/postgres'
 
+function isAuthorized(request: NextRequest) {
+  const adminToken = process.env.ADMIN_TOKEN
+  if (!adminToken) return false
+  const provided = request.headers.get('x-admin-token')
+  return provided === adminToken
+}
+
 async function initDatabase() {
   try {
     await sql`
@@ -54,11 +61,23 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const key = searchParams.get('key')
     const list = searchParams.get('list') === 'true'
+    const verify = searchParams.get('verify') === 'true'
+
+    if (verify) {
+      return NextResponse.json({ authorized: isAuthorized(request) })
+    }
 
     if (list) {
       const result = await sql`SELECT key FROM guests ORDER BY created_at ASC`
       const keys = result.rows.map((row: any) => row.key)
       return NextResponse.json({ keys })
+    }
+
+    if (!isAuthorized(request)) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
     }
 
     if (key) {

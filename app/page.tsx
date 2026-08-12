@@ -37,12 +37,28 @@ async function apiListKeys(prefix: string) {
   return (data.keys as string[]).filter((k) => k.startsWith(prefix))
 }
 
-async function apiGet(key: string) {
-  const res = await fetch('/api/guests?key=' + encodeURIComponent(key))
+class UnauthorizedError extends Error {}
+
+async function apiGet(key: string, token: string) {
+  const res = await fetch('/api/guests?key=' + encodeURIComponent(key), {
+    headers: { 'x-admin-token': token }
+  })
+  if (res.status === 401) throw new UnauthorizedError()
   if (!res.ok) return null
   const data = await res.json()
   return data.value as GuestRecord
 }
+
+async function apiVerifyToken(token: string) {
+  const res = await fetch('/api/guests?verify=true', {
+    headers: { 'x-admin-token': token }
+  })
+  if (!res.ok) return false
+  const data = await res.json()
+  return data.authorized === true
+}
+
+const ADMIN_TOKEN_STORAGE_KEY = 'eskuvo_admin_token'
 
 function esc(s: string | null | undefined) {
   return s == null ? '' : s
@@ -63,6 +79,13 @@ export default function Home() {
   const [adminLoading, setAdminLoading] = useState(false)
   const [adminError, setAdminError] = useState('')
   const [records, setRecords] = useState<GuestRecord[]>([])
+  const [adminToken, setAdminToken] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    return sessionStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)
+  })
+  const [tokenInput, setTokenInput] = useState('')
+  const [tokenChecking, setTokenChecking] = useState(false)
+  const [tokenError, setTokenError] = useState('')
 
   function selectAttend(val: boolean) {
     setAttending(val)
@@ -128,12 +151,12 @@ export default function Home() {
     }
   }
 
-  async function loadRecords() {
+  async function loadRecords(token: string) {
     const keys = await apiListKeys('guest:')
     const result: GuestRecord[] = []
     for (let i = 0; i < keys.length; i += 8) {
       const batch = keys.slice(i, i + 8)
-      const values = await Promise.all(batch.map((k) => apiGet(k).catch(() => null)))
+      const values = await Promise.all(batch.map((k) => apiGet(k, token)))
       values.forEach((v) => {
         if (!v) return
         result.push(v)
@@ -143,14 +166,20 @@ export default function Home() {
     return result
   }
 
-  async function refreshAdmin() {
+  async function refreshAdmin(token: string) {
     setAdminLoading(true)
     setAdminError('')
     try {
-      const recs = await loadRecords()
+      const recs = await loadRecords(token)
       setRecords(recs)
-    } catch {
-      setAdminError('Nem sikerült betölteni a listát. Próbáld újra.')
+    } catch (err) {
+      if (err instanceof UnauthorizedError) {
+        sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY)
+        setAdminToken(null)
+        setTokenError('Hibás token. Próbáld újra.')
+      } else {
+        setAdminError('Nem sikerült betölteni a listát. Próbáld újra.')
+      }
     } finally {
       setAdminLoading(false)
     }
@@ -159,8 +188,36 @@ export default function Home() {
   function toggleAdmin() {
     const next = !adminOpen
     setAdminOpen(next)
-    if (next) {
-      refreshAdmin()
+    if (next && adminToken) {
+      refreshAdmin(adminToken)
+    }
+    if (!next) {
+      setTokenError('')
+    }
+  }
+
+  async function handleTokenSubmit() {
+    const candidate = tokenInput.trim()
+    if (!candidate) {
+      setTokenError('Add meg a jelszót.')
+      return
+    }
+    setTokenChecking(true)
+    setTokenError('')
+    try {
+      const ok = await apiVerifyToken(candidate)
+      if (!ok) {
+        setTokenError('Hibás jelszó.')
+        return
+      }
+      sessionStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, candidate)
+      setAdminToken(candidate)
+      setTokenInput('')
+      refreshAdmin(candidate)
+    } catch {
+      setTokenError('Hiba történt az ellenőrzés során. Próbáld újra.')
+    } finally {
+      setTokenChecking(false)
     }
   }
 
@@ -383,7 +440,31 @@ export default function Home() {
           >{adminOpen ? 'Szervezői nézet elrejtése' : 'Szervezői nézet'}</a>
         </p>
 
-        {adminOpen && (
+        {adminOpen && !adminToken && (
+          <section className="card">
+            <h2>Vendéglista</h2>
+            <p className="sub">Ez a nézet jelszóval védett — csak a szervezők férnek hozzá.</p>
+
+            <div style={{marginBottom: '22px'}}>
+              <label className="field-label" htmlFor="admin-token">Jelszó</label>
+              <input
+                type="password"
+                id="admin-token"
+                placeholder="••••••••"
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleTokenSubmit() }}
+              />
+            </div>
+
+            {tokenError && <p className="error-text" style={{display: 'block'}}>{tokenError}</p>}
+            <button className="submit-btn" disabled={tokenChecking} onClick={handleTokenSubmit}>
+              {tokenChecking ? 'Ellenőrzés...' : 'Belépés'}
+            </button>
+          </section>
+        )}
+
+        {adminOpen && adminToken && (
           <section className="card">
             <h2>Vendéglista</h2>
             <p className="sub">Beérkezett visszajelzések és összesítés a cateringnek.</p>
@@ -475,7 +556,7 @@ export default function Home() {
             </div>
 
             <div style={{display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap'}}>
-              <button className="submit-btn" style={{flex: 1, minWidth: '160px', marginTop: 0}} onClick={refreshAdmin}>Lista frissítése</button>
+              <button className="submit-btn" style={{flex: 1, minWidth: '160px', marginTop: 0}} onClick={() => adminToken && refreshAdmin(adminToken)}>Lista frissítése</button>
               <button
                 className="submit-btn"
                 style={{flex: 1, minWidth: '160px', marginTop: 0, background: '#fff', color: 'var(--wine)', border: '1.5px solid var(--wine)'}}
