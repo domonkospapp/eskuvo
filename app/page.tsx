@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 
 export default function Home() {
   useEffect(() => {
-    window.storage = {
+    (window as any).storage = {
       async set(key: string, value: string) {
         const res = await fetch('/api/guests', {
           method: 'POST',
