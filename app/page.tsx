@@ -41,7 +41,7 @@ async function apiGet(key: string) {
   const res = await fetch('/api/guests?key=' + encodeURIComponent(key))
   if (!res.ok) return null
   const data = await res.json()
-  return data.value as string
+  return data.value as GuestRecord
 }
 
 function esc(s: string | null | undefined) {
@@ -136,11 +136,7 @@ export default function Home() {
       const values = await Promise.all(batch.map((k) => apiGet(k).catch(() => null)))
       values.forEach((v) => {
         if (!v) return
-        try {
-          result.push(JSON.parse(v))
-        } catch {
-          // skip malformed record
-        }
+        result.push(v)
       })
     }
     result.sort((a, b) => (a.submittedAt || '').localeCompare(b.submittedAt || ''))
