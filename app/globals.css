@@ -303,6 +303,15 @@ footer.divider-foot{padding:40px 24px 0;}
   font-size:20px;
   color:var(--wine);
 }
+.detail-link{
+  color:var(--wine);
+  text-decoration:none;
+  border-bottom:1px solid var(--gold);
+}
+.detail-link:hover{
+  color:var(--wine-dark);
+  border-bottom-color:var(--wine);
+}
 .photo-frame{
   margin:36px auto 0;
   max-width:360px;

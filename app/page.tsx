@@ -43,7 +43,11 @@ export default function Home() {
           <div className="detail-row">
             <div className="detail-box">
               <p className="course-label">Helyszín</p>
-              <p>Daalarna Garden, Szentendre</p>
+              <p>
+                <a href="https://www.daalarnagarden.hu/en/home/" target="_blank" rel="noopener noreferrer" className="detail-link">
+                  Daalarna Garden, Szentendre
+                </a>
+              </p>
             </div>
             <div className="detail-box">
               <p className="course-label">Időpont</p>
