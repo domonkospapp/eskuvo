@@ -50,10 +50,10 @@ export default function Home() {
 
         <div className="photo-frame">
           <Image
-            src="/mmimage.png"
+            src="/mm-envelope.png"
             alt="Márkó és Mercédesz"
-            width={1731}
-            height={1984}
+            width={1823}
+            height={1937}
             style={{ width: '100%', height: 'auto' }}
             priority
           />
