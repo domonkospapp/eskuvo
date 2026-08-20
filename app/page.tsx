@@ -57,12 +57,11 @@ export default function Home() {
         </section>
 
         <div className="photo-frame">
-          {/* TEMP PREVIEW: /couple.png kicserélve /envelope-mockup.png-re, csak megtekintésre */}
           <Image
-            src="/envelope-mockup.png"
+            src="/mmimage.png"
             alt="Márkó és Mercédesz"
-            width={3000}
-            height={2300}
+            width={1731}
+            height={1984}
             style={{ width: '100%', height: 'auto' }}
             priority
           />
