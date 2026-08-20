@@ -19,14 +19,6 @@ export default function Home() {
         <p className="eyebrow">Esküvői meghívó</p>
         <h1 className="names">Márkó<span className="amp">&amp;</span>Mercédesz</h1>
         <p className="meta">2026. szeptember 11. &nbsp;•&nbsp; Daalarna Garden, Szentendre</p>
-        <svg className="vine vine-top" viewBox="0 0 400 24" xmlns="http://www.w3.org/2000/svg" role="presentation">
-          <line x1="20" y1="12" x2="380" y2="12" stroke="#D9C08E" strokeWidth="1"/>
-          <circle cx="200" cy="12" r="4" fill="#D9C08E"/>
-          <circle cx="188" cy="8" r="2.4" fill="#D9C08E"/>
-          <circle cx="212" cy="8" r="2.4" fill="#D9C08E"/>
-          <circle cx="182" cy="16" r="2" fill="#D9C08E"/>
-          <circle cx="218" cy="16" r="2" fill="#D9C08E"/>
-        </svg>
       </div>
 
       <div className="wrap">
@@ -84,16 +76,7 @@ export default function Home() {
           Visszajelzés és menüválasztás
         </Link>
 
-        <footer className="divider-foot">
-          <svg className="vine" viewBox="0 0 400 24" xmlns="http://www.w3.org/2000/svg" role="presentation">
-            <line x1="20" y1="12" x2="380" y2="12" stroke="#B8965A" strokeWidth="1"/>
-            <circle cx="200" cy="12" r="4" fill="#B8965A"/>
-            <circle cx="188" cy="8" r="2.4" fill="#B8965A"/>
-            <circle cx="212" cy="8" r="2.4" fill="#B8965A"/>
-            <circle cx="182" cy="16" r="2" fill="#B8965A"/>
-            <circle cx="218" cy="16" r="2" fill="#B8965A"/>
-          </svg>
-        </footer>
+        <footer className="divider-foot"></footer>
       </div>
     </>
   )
