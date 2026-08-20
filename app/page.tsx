@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 const PROGRAM = [
   { time: '16:00', event: 'Vendégvárás' },
@@ -53,17 +54,14 @@ export default function Home() {
 
         <section className="card">
           <div className="photo-frame">
-            {/*
-              TODO: cseréld le a placeholder helyett a mellékelt fotóra.
-              Mentsd a képet ide: public/couple.jpg, majd ez a blokk
-              helyettesíthető egy <img src="/couple.jpg" alt="Márkó és Mercédesz" />
-              elemre.
-            */}
-            <div className="photo-placeholder">
-              Ide kerül a pár fotója
-              <br />
-              (public/couple.jpg)
-            </div>
+            <Image
+              src="/couple.png"
+              alt="Márkó és Mercédesz"
+              width={1465}
+              height={4150}
+              style={{ width: '100%', height: 'auto' }}
+              priority
+            />
           </div>
         </section>
 
