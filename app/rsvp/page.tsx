@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 type Choices = {
   starter: string | null
@@ -460,14 +461,17 @@ export default function RsvpPage() {
         {submitted && (
           <section className="card">
             <div className="confirmation">
-              <div className="checkmark">✓</div>
               {attending ? (
                 <>
+                  <div className="checkmark">✓</div>
                   <h2>Köszönjük, {submittedName}!</h2>
                   <p>Örülünk, hogy velünk ünnepelsz. Menüválasztásod rögzítettük.</p>
                 </>
               ) : (
                 <>
+                  <div className="confirmation-photo">
+                    <Image src="/sad.png" alt="Sajnáljuk" width={1442} height={3117} style={{ width: '100%', height: 'auto' }} />
+                  </div>
                   <h2>Köszönjük a visszajelzést, {submittedName}.</h2>
                   <p>Sajnáljuk, hogy nem tudsz jönni — nagyon fogsz hiányozni.</p>
                 </>

@@ -244,6 +244,18 @@ textarea{resize:vertical;min-height:80px;}
   color:var(--wine);
   font-size:22px;
 }
+.confirmation-photo{
+  width:140px;
+  margin:0 auto 18px;
+  border-radius:4px;
+  overflow:hidden;
+  box-shadow:0 6px 18px rgba(59,25,35,0.14);
+}
+.confirmation-photo img{
+  display:block;
+  width:100%;
+  height:auto;
+}
 .confirmation h2{margin-bottom:10px;}
 .confirmation p{font-size:16px;color:#5a5148;}
 .counter{
