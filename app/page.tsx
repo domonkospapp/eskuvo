@@ -30,6 +30,17 @@ export default function Home() {
       </div>
 
       <div className="wrap">
+        <div className="photo-frame">
+          <Image
+            src="/couple.png"
+            alt="Márkó és Mercédesz"
+            width={1465}
+            height={4150}
+            style={{ width: '100%', height: 'auto' }}
+            priority
+          />
+        </div>
+
         <section className="card">
           <div className="invite-letter">
             <p>Kedves családunk és barátaink!</p>
@@ -49,19 +60,6 @@ export default function Home() {
               <p className="course-label">Időpont</p>
               <p>2026. szeptember 11.</p>
             </div>
-          </div>
-        </section>
-
-        <section className="card">
-          <div className="photo-frame">
-            <Image
-              src="/couple.png"
-              alt="Márkó és Mercédesz"
-              width={1465}
-              height={4150}
-              style={{ width: '100%', height: 'auto' }}
-              priority
-            />
           </div>
         </section>
 

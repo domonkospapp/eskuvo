@@ -245,11 +245,12 @@ textarea{resize:vertical;min-height:80px;}
   font-size:22px;
 }
 .confirmation-photo{
-  width:140px;
-  margin:0 auto 18px;
-  border-radius:4px;
-  overflow:hidden;
-  box-shadow:0 6px 18px rgba(59,25,35,0.14);
+  width:220px;
+  margin:0 auto 20px;
+  background:#fff;
+  padding:8px;
+  border:1px solid var(--gold-light);
+  box-shadow:0 10px 26px rgba(59,25,35,0.16);
 }
 .confirmation-photo img{
   display:block;
@@ -303,32 +304,17 @@ footer.divider-foot{padding:40px 24px 0;}
   color:var(--wine);
 }
 .photo-frame{
-  margin:0 auto;
-  max-width:280px;
-  padding:10px;
+  margin:36px auto 0;
+  max-width:360px;
+  padding:12px;
   background:#fff;
-  border:1px solid var(--cream-deep);
-  box-shadow:0 8px 24px rgba(59,25,35,0.12);
-  transform:rotate(-1.5deg);
+  border:1px solid var(--gold-light);
+  box-shadow:0 14px 34px rgba(59,25,35,0.18);
 }
 .photo-frame img{
   display:block;
   width:100%;
   height:auto;
-}
-.photo-placeholder{
-  aspect-ratio:706/1508;
-  width:100%;
-  background:linear-gradient(160deg, var(--cream-deep), var(--olive-bg));
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  padding:24px;
-  font-size:13px;
-  color:#8a7d6c;
-  font-style:italic;
-  line-height:1.5;
 }
 .timeline{
   margin-top:8px;
