@@ -313,12 +313,7 @@ footer.divider-foot{padding:40px 24px 0;}
   border-bottom-color:var(--wine);
 }
 .photo-frame{
-  margin:36px auto 0;
-  max-width:360px;
-  padding:12px;
-  background:#fff;
-  border:1px solid var(--gold-light);
-  box-shadow:0 14px 34px rgba(59,25,35,0.18);
+  margin:36px 0 0;
 }
 .photo-frame img{
   display:block;
