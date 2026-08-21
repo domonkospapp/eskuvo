@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -66,6 +66,56 @@ function esc(s: string | null | undefined) {
   return s == null ? '' : s
 }
 
+const CONFETTI_COLORS = ['#5B1B2E', '#B8965A', '#D9C08E', '#5C6B47', '#F8F1E4']
+
+function Celebration({ variant }: { variant: 'confetti' | 'sad' }) {
+  const particles = useMemo(() => {
+    const count = variant === 'confetti' ? 70 : 36
+    return Array.from({ length: count }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      duration: 2.6 + Math.random() * 2.4,
+      delay: Math.random() * 1.4,
+      size: variant === 'confetti' ? 6 + Math.random() * 7 : 18 + Math.random() * 14,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+    }))
+  }, [variant])
+
+  return (
+    <div className="celebration-layer" aria-hidden="true">
+      {particles.map((p) =>
+        variant === 'confetti' ? (
+          <span
+            key={p.id}
+            className="confetti-piece"
+            style={{
+              left: p.left + '%',
+              width: p.size,
+              height: p.size * 1.6,
+              backgroundColor: p.color,
+              animationDuration: p.duration + 's',
+              animationDelay: p.delay + 's',
+            }}
+          />
+        ) : (
+          <span
+            key={p.id}
+            className="sad-piece"
+            style={{
+              left: p.left + '%',
+              fontSize: p.size,
+              animationDuration: p.duration + 's',
+              animationDelay: p.delay + 's',
+            }}
+          >
+            😢
+          </span>
+        )
+      )}
+    </div>
+  )
+}
+
 export default function RsvpPage() {
   const [name, setName] = useState('')
   const [allergies, setAllergies] = useState('')
@@ -76,6 +126,13 @@ export default function RsvpPage() {
   const [submitted, setSubmitted] = useState(false)
   const [submittedName, setSubmittedName] = useState('')
   const [counter, setCounter] = useState<number | null>(null)
+  const [showCelebration, setShowCelebration] = useState(false)
+
+  useEffect(() => {
+    if (!showCelebration) return
+    const timer = setTimeout(() => setShowCelebration(false), 4500)
+    return () => clearTimeout(timer)
+  }, [showCelebration])
 
   const [adminOpen, setAdminOpen] = useState(false)
   const [adminLoading, setAdminLoading] = useState(false)
@@ -150,6 +207,7 @@ export default function RsvpPage() {
       if (!ok) throw new Error('Storage write failed')
       setSubmittedName(trimmedName)
       setSubmitted(true)
+      setShowCelebration(true)
       refreshCounter()
     } catch (err) {
       setSubmitting(false)
@@ -267,6 +325,8 @@ export default function RsvpPage() {
 
   return (
     <>
+      {showCelebration && <Celebration variant={attending ? 'confetti' : 'sad'} />}
+
       <div className="hero">
         <p className="eyebrow">Esküvői visszajelzés</p>
         <h1 className="names">Márkó<span className="amp">&amp;</span>Mercédesz</h1>
