@@ -66,7 +66,7 @@ function esc(s: string | null | undefined) {
   return s == null ? '' : s
 }
 
-const CONFETTI_COLORS = ['#5B1B2E', '#B8965A', '#D9C08E', '#5C6B47', '#F8F1E4']
+const CONFETTI_COLORS = ['#5B1B2E', '#B8965A', '#D9C08E', '#5C6B47', '#F8F1E4', '#FF6F91', '#FFC145']
 
 function Celebration({ variant }: { variant: 'confetti' | 'sad' }) {
   const particles = useMemo(() => {
