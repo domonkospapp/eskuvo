@@ -95,7 +95,7 @@ input[type="text"], input[type="password"], textarea{
   font-family:'EB Garamond', serif;
   font-size:17px;
   padding:12px 14px;
-  border:1px solid var(--window-green-dark);
+  border:1px solid var(--dusty-blue);
   border-radius:2px;
   background:var(--cream);
   color:var(--ink);
@@ -114,7 +114,7 @@ textarea{resize:vertical;min-height:80px;}
 .toggle-btn{
   padding:16px 12px;
   text-align:center;
-  border:1.5px solid var(--window-green-dark);
+  border:1.5px solid var(--dusty-blue);
   border-radius:2px;
   background:var(--cream);
   cursor:pointer;
@@ -167,7 +167,7 @@ textarea{resize:vertical;min-height:80px;}
 .course-block{margin-bottom:26px;}
 .main-options{display:flex;flex-direction:column;gap:10px;}
 .main-option{
-  border:1.5px solid var(--window-green-dark);
+  border:1.5px solid var(--dusty-blue);
   border-radius:2px;
   padding:14px 16px;
   cursor:pointer;
@@ -205,9 +205,7 @@ textarea{resize:vertical;min-height:80px;}
   margin:10px 0 0 26px;
   font-size:15px;
   color:#5a5148;
-  display:none;
 }
-.main-option.selected .main-option-detail{display:block;}
 .main-option-detail .course-label{margin-top:12px;}
 .main-option-detail .course-label:first-child{margin-top:0;}
 .submit-btn{
@@ -329,7 +327,6 @@ footer.divider-foot{padding:40px 24px 0;}
   display:block;
   width:100%;
   height:auto;
-  filter:grayscale(1) sepia(0.35) hue-rotate(175deg) saturate(1.6) brightness(0.97);
 }
 .timeline{
   margin-top:8px;

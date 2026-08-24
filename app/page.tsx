@@ -58,19 +58,20 @@ export default function Home() {
 
         <div className="photo-frame">
           <Image
-            src="/mm-envelope.png"
+            src="/mm-envelope-orchid.png"
             alt="Márkó és Mercédesz"
-            width={1823}
-            height={1937}
+            width={1649}
+            height={1838}
             style={{ width: '100%', height: 'auto' }}
             priority
           />
         </div>
 
         <section className="card">
-          <p className="day-label">Szeptember 11.</p>
           <h2 className="day-title">Program</h2>
           <p className="sub">Így telik majd a napunk együtt.</p>
+
+          <p className="day-label">Szeptember 11.</p>
           <div className="timeline">
             {PROGRAM_DAY1.map((p) => (
               <div className="timeline-row" key={p.time}>
@@ -80,8 +81,7 @@ export default function Home() {
             ))}
           </div>
 
-          <p className="day-label" style={{marginTop: '36px'}}>Szeptember 12.</p>
-          <h2 className="day-title">Program</h2>
+          <p className="day-label" style={{marginTop: '28px'}}>Szeptember 12.</p>
           <div className="timeline">
             {PROGRAM_DAY2.map((p) => (
               <div className="timeline-row" key={p.time}>
