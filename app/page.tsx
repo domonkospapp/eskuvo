@@ -89,7 +89,7 @@ export default function Home() {
           <p className="timeline-note">…and the party goes on</p>
         </section>
 
-        <Link href="/rsvp" className="submit-btn" style={{display: 'block', marginTop: '32px'}}>
+        <Link href="/rsvp" className="submit-btn cta-gray" style={{display: 'block', marginTop: '32px'}}>
           Visszajelzés és menüválasztás
         </Link>
 
