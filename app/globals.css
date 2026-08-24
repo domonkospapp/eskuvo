@@ -254,7 +254,7 @@ textarea{resize:vertical;min-height:80px;}
 .confirmation-photo{
   width:220px;
   margin:0 auto 20px;
-  background:#fff;
+  background:#000;
   padding:8px;
   border:1px solid var(--gold);
   box-shadow:0 10px 26px rgba(59,25,35,0.16);
@@ -356,7 +356,7 @@ footer.divider-foot{padding:40px 24px 0;}
   letter-spacing:0.18em;
   text-transform:uppercase;
   color:var(--wine);
-  opacity:0.75;
+  font-weight:700;
   margin:0 0 6px;
 }
 .day-title{

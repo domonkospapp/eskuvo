@@ -32,7 +32,7 @@ export default function Home() {
       <div className="wrap">
         <section className="card">
           <div className="invite-letter">
-            <p>Kedves családunk és barátaink!</p>
+            <p style={{fontWeight: 700}}>Kedves családunk és barátaink!</p>
             <p>
               Szeretettel meghívunk Benneteket, hogy velünk ünnepeljétek életünk
               egyik fontos pillanatát, amikor hivatalosan is összekötjük
