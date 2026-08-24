@@ -10,9 +10,9 @@
   --olive:#5C6B47;
   --olive-bg:#E9EBDF;
   --window-green:#A6A62E;
-  --window-green-dark:#8C8C26;
+  --window-green-dark:#6E6E1D;
   --dusty-blue:#8C9DAD;
-  --dusty-blue-dark:#6F8194;
+  --dusty-blue-dark:#5C6E7E;
   --error:#8A2E2E;
 }
 *{box-sizing:border-box;}
@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:80px;}
 .menu-card.open{display:block;}
 .printed-menu{
   background:var(--cream);
-  border:1px solid var(--cream-deep);
+  border:1px solid #DEC9A0;
   padding:24px 22px;
   margin-bottom:24px;
 }
@@ -189,7 +189,7 @@ textarea{resize:vertical;min-height:80px;}
 .radio-dot{
   width:16px;height:16px;
   border-radius:50%;
-  border:1.5px solid #b8a888;
+  border:1.5px solid #9c8a5f;
   flex:none;
   position:relative;
 }
@@ -245,7 +245,7 @@ textarea{resize:vertical;min-height:80px;}
 .confirmation .checkmark{
   width:48px;height:48px;
   border-radius:50%;
-  border:1.5px solid var(--wine);
+  border:1.5px solid var(--wine-dark);
   display:flex;align-items:center;justify-content:center;
   margin:0 auto 18px;
   color:var(--wine);
@@ -256,7 +256,7 @@ textarea{resize:vertical;min-height:80px;}
   margin:0 auto 20px;
   background:#fff;
   padding:8px;
-  border:1px solid var(--gold-light);
+  border:1px solid var(--gold);
   box-shadow:0 10px 26px rgba(59,25,35,0.16);
 }
 .confirmation-photo img{
