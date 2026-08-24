@@ -299,26 +299,26 @@ footer.divider-foot{padding:40px 24px 0;}
   margin-top:24px;
 }
 .detail-box{
-  background:rgba(0,0,0,0.28);
-  border:1px solid rgba(0,0,0,0.12);
+  background:rgba(0,0,0,0.42);
+  border:none;
   padding:16px 18px;
   text-align:center;
 }
-.detail-box .course-label{margin:0 0 6px;text-align:center;color:var(--gold-light);}
+.detail-box .course-label{margin:0 0 6px;text-align:center;color:var(--wine);}
 .detail-box p{
   margin:0;
   font-family:'Cormorant Garamond', serif;
   font-size:20px;
-  color:var(--cream);
+  color:var(--wine);
 }
 .detail-link{
-  color:var(--cream);
+  color:var(--wine);
   text-decoration:none;
   border-bottom:1px solid var(--gold);
 }
 .detail-link:hover{
-  color:var(--gold-light);
-  border-bottom-color:var(--gold-light);
+  color:var(--wine-dark);
+  border-bottom-color:var(--wine);
 }
 .photo-frame{
   margin:36px 0 0;
