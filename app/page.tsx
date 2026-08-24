@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 
-const PROGRAM = [
+const PROGRAM_DAY1 = [
   { time: '16:00', event: 'Vendégvárás' },
   { time: '16:45', event: 'Szertartás' },
   { time: '17:20', event: 'Aperitivo, Gratuláció' },
@@ -12,13 +12,19 @@ const PROGRAM = [
   { time: '00:00', event: 'Éjféli vacsora' },
 ]
 
+const PROGRAM_DAY2 = [
+  { time: '13:00', event: 'Érkezés & Welcome drink' },
+  { time: '14:00', event: 'Live DJ' },
+  { time: '15:00', event: 'Grill & Pizza' },
+]
+
 export default function Home() {
   return (
     <>
       <div className="hero">
         <p className="eyebrow">Esküvői meghívó</p>
         <h1 className="names">Márkó<span className="amp">&amp;</span>Mercédesz</h1>
-        <p className="meta">2026. szeptember 11. &nbsp;•&nbsp; Daalarna Garden, Szentendre</p>
+        <p className="meta">2026. szeptember 11-12. &nbsp;•&nbsp; Daalarna Garden, Szentendre</p>
       </div>
 
       <div className="wrap">
@@ -43,7 +49,7 @@ export default function Home() {
             </div>
             <div className="detail-box">
               <p className="course-label">Időpont</p>
-              <p>2026. szeptember 11.</p>
+              <p>2026. szeptember 11-12.</p>
             </div>
           </div>
         </section>
@@ -60,16 +66,27 @@ export default function Home() {
         </div>
 
         <section className="card">
-          <h2>Program</h2>
+          <h2 className="day-title">Szeptember 11. — Wedding day</h2>
           <p className="sub">Így telik majd a napunk együtt.</p>
           <div className="timeline">
-            {PROGRAM.map((p) => (
+            {PROGRAM_DAY1.map((p) => (
               <div className="timeline-row" key={p.time}>
                 <span className="timeline-time">{p.time}</span>
                 <span className="timeline-event">{p.event}</span>
               </div>
             ))}
           </div>
+
+          <h2 className="day-title">Szeptember 12. — The day after</h2>
+          <div className="timeline">
+            {PROGRAM_DAY2.map((p) => (
+              <div className="timeline-row" key={p.time}>
+                <span className="timeline-time">{p.time}</span>
+                <span className="timeline-event">{p.event}</span>
+              </div>
+            ))}
+          </div>
+          <p className="timeline-note">…and the party goes on</p>
         </section>
 
         <Link href="/rsvp" className="submit-btn" style={{display: 'block', marginTop: '32px'}}>

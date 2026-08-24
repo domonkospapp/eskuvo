@@ -330,7 +330,7 @@ export default function RsvpPage() {
       <div className="hero">
         <p className="eyebrow">Esküvői visszajelzés</p>
         <h1 className="names">Márkó<span className="amp">&amp;</span>Mercédesz</h1>
-        <p className="meta">2026. szeptember 11. &nbsp;•&nbsp; Daalarna Garden, Szentendre</p>
+        <p className="meta">2026. szeptember 11-12. &nbsp;•&nbsp; Daalarna Garden, Szentendre</p>
       </div>
 
       <div className="wrap">
