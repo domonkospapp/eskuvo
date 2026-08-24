@@ -23,7 +23,9 @@ export default function Home() {
     <>
       <div className="hero">
         <p className="eyebrow">Esküvői meghívó</p>
-        <h1 className="names">Márkó<span className="amp">&amp;</span>Mercédesz</h1>
+        <h1 className="names-label">
+          <Image src="/mm-label.png" alt="Márkó & Mercédesz" width={2172} height={724} priority style={{ width: '100%', height: 'auto' }} />
+        </h1>
         <p className="meta">2026. szeptember 11-12. &nbsp;•&nbsp; Daalarna Garden, Szentendre</p>
       </div>
 

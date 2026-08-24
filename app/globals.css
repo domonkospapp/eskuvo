@@ -42,18 +42,11 @@ body{
   color:var(--gold-light);
   margin:0 0 20px;
 }
-.names{
-  font-family:'Cormorant Garamond', serif;
-  font-weight:500;
-  font-size:clamp(38px,7vw,58px);
-  line-height:1.08;
+.names-label{
   margin:0;
-}
-.names .amp{
-  font-style:italic;
-  color:var(--gold-light);
-  padding:0 6px;
-  font-weight:400;
+  max-width:420px;
+  margin-left:auto;
+  margin-right:auto;
 }
 .meta{
   margin:22px 0 0;
