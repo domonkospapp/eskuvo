@@ -379,7 +379,7 @@ export default function RsvpPage() {
             </div>
 
             <div className={'menu-card' + (attending === true ? ' open' : '')}>
-              <p style={{fontSize: '13px', color: '#8a7d6c', fontStyle: 'italic', margin: '28px 0 20px'}}>Fogásonként külön-külön választhatsz — bátran kombinálhatod a hagyományos és a vegán opciókat.</p>
+              <p style={{fontSize: '13px', color: 'var(--wine)', fontStyle: 'italic', margin: '28px 0 20px'}}>Fogásonként külön-külön választhatsz — bátran kombinálhatod a hagyományos és a vegán opciókat.</p>
 
               <div className="course-block">
                 <label className="field-label">Előétel</label>

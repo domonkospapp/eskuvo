@@ -78,10 +78,9 @@ h2{
 }
 .sub{
   font-size:15px;
-  color:var(--ink);
+  color:var(--wine);
   margin:0 0 24px;
   font-style:italic;
-  opacity:0.8;
 }
 label.field-label{
   display:block;
@@ -269,7 +268,7 @@ textarea{resize:vertical;min-height:80px;}
   filter:grayscale(1);
 }
 .confirmation h2{margin-bottom:10px;}
-.confirmation p{font-size:16px;color:#5a5148;}
+.confirmation p{font-size:16px;color:var(--wine);}
 .counter{
   text-align:center;
   font-size:14px;
@@ -353,26 +352,24 @@ footer.divider-foot{padding:40px 24px 0;}
 }
 .timeline-event{
   font-size:16px;
-  color:var(--ink);
+  color:var(--wine);
 }
 .day-label{
   font-size:12px;
   letter-spacing:0.18em;
   text-transform:uppercase;
-  color:var(--ink);
-  opacity:0.7;
-  margin:0 0 4px;
+  color:var(--wine);
+  opacity:0.75;
+  margin:0 0 6px;
 }
 .day-title{
   margin:0 0 20px;
 }
-.day-title:not(:first-child){margin-top:36px;}
 .timeline-note{
   margin:14px 0 0;
   font-style:italic;
   font-size:15px;
-  color:var(--ink);
-  opacity:0.8;
+  color:var(--wine);
 }
 @media (max-width:480px){
   .attend-row{grid-template-columns:1fr;}

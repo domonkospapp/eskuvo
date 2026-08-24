@@ -68,7 +68,8 @@ export default function Home() {
         </div>
 
         <section className="card">
-          <h2 className="day-title">Szeptember 11. — Wedding day</h2>
+          <p className="day-label">Szeptember 11.</p>
+          <h2 className="day-title">Program</h2>
           <p className="sub">Így telik majd a napunk együtt.</p>
           <div className="timeline">
             {PROGRAM_DAY1.map((p) => (
@@ -79,7 +80,8 @@ export default function Home() {
             ))}
           </div>
 
-          <h2 className="day-title">Szeptember 12. — The day after</h2>
+          <p className="day-label" style={{marginTop: '36px'}}>Szeptember 12.</p>
+          <h2 className="day-title">Program</h2>
           <div className="timeline">
             {PROGRAM_DAY2.map((p) => (
               <div className="timeline-row" key={p.time}>
