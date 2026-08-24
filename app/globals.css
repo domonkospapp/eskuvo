@@ -304,7 +304,7 @@ footer.divider-foot{padding:40px 24px 0;}
   padding:16px 18px;
   text-align:center;
 }
-.detail-box .course-label{margin:0 0 6px;text-align:center;color:var(--wine);}
+.detail-box .course-label{margin:0 0 6px;text-align:center;color:var(--wine);font-weight:700;}
 .detail-box p{
   margin:0;
   font-family:'Cormorant Garamond', serif;
