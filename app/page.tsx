@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 
-const PROGRAM = [
+const PROGRAM_DAY1 = [
   { time: '16:00', event: 'Vendégvárás' },
   { time: '16:45', event: 'Szertartás' },
   { time: '17:20', event: 'Aperitivo, Gratuláció' },
@@ -12,19 +12,27 @@ const PROGRAM = [
   { time: '00:00', event: 'Éjféli vacsora' },
 ]
 
+const PROGRAM_DAY2 = [
+  { time: '13:00', event: 'Érkezés & Welcome drink' },
+  { time: '14:00', event: 'Live DJ' },
+  { time: '15:00', event: 'Grill & Pizza' },
+]
+
 export default function Home() {
   return (
     <>
       <div className="hero">
         <p className="eyebrow">Esküvői meghívó</p>
-        <h1 className="names">Márkó<span className="amp">&amp;</span>Mercédesz</h1>
-        <p className="meta">2026. szeptember 11. &nbsp;•&nbsp; Daalarna Garden, Szentendre</p>
+        <h1 className="names-label">
+          <Image src="/mm-label.png" alt="Márkó & Mercédesz" width={2172} height={724} priority style={{ width: '100%', height: 'auto' }} />
+        </h1>
+        <p className="meta">2026. szeptember 11-12. &nbsp;•&nbsp; Daalarna Garden, Szentendre</p>
       </div>
 
       <div className="wrap">
         <section className="card">
           <div className="invite-letter">
-            <p>Kedves családunk és barátaink!</p>
+            <p style={{fontWeight: 700, fontStyle: 'italic'}}>Kedves családunk és barátaink!</p>
             <p>
               Szeretettel meghívunk Benneteket, hogy velünk ünnepeljétek életünk
               egyik fontos pillanatát, amikor hivatalosan is összekötjük
@@ -43,36 +51,49 @@ export default function Home() {
             </div>
             <div className="detail-box">
               <p className="course-label">Időpont</p>
-              <p>2026. szeptember 11.</p>
+              <p>2026. szeptember 11-12.</p>
             </div>
           </div>
         </section>
 
         <div className="photo-frame">
           <Image
-            src="/mm-envelope.png"
+            src="/mm-envelope-orchid.png"
             alt="Márkó és Mercédesz"
-            width={1823}
-            height={1937}
+            width={1649}
+            height={1838}
             style={{ width: '100%', height: 'auto' }}
             priority
           />
         </div>
 
         <section className="card">
-          <h2>Program</h2>
+          <h2 className="day-title">Program</h2>
           <p className="sub">Így telik majd a napunk együtt.</p>
+
+          <p className="day-label">Szeptember 11.</p>
           <div className="timeline">
-            {PROGRAM.map((p) => (
+            {PROGRAM_DAY1.map((p) => (
               <div className="timeline-row" key={p.time}>
                 <span className="timeline-time">{p.time}</span>
                 <span className="timeline-event">{p.event}</span>
               </div>
             ))}
           </div>
+
+          <p className="day-label" style={{marginTop: '28px'}}>Szeptember 12.</p>
+          <div className="timeline">
+            {PROGRAM_DAY2.map((p) => (
+              <div className="timeline-row" key={p.time}>
+                <span className="timeline-time">{p.time}</span>
+                <span className="timeline-event">{p.event}</span>
+              </div>
+            ))}
+          </div>
+          <p className="timeline-note">…and the party goes on</p>
         </section>
 
-        <Link href="/rsvp" className="submit-btn" style={{display: 'block', marginTop: '32px'}}>
+        <Link href="/rsvp" className="submit-btn cta-gray" style={{display: 'block', marginTop: '32px'}}>
           Visszajelzés és menüválasztás
         </Link>
 

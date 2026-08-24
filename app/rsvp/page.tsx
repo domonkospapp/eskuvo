@@ -329,8 +329,10 @@ export default function RsvpPage() {
 
       <div className="hero">
         <p className="eyebrow">Esküvői visszajelzés</p>
-        <h1 className="names">Márkó<span className="amp">&amp;</span>Mercédesz</h1>
-        <p className="meta">2026. szeptember 11. &nbsp;•&nbsp; Daalarna Garden, Szentendre</p>
+        <h1 className="names-label">
+          <Image src="/mm-label.png" alt="Márkó & Mercédesz" width={2172} height={724} priority style={{ width: '100%', height: 'auto' }} />
+        </h1>
+        <p className="meta">2026. szeptember 11-12. &nbsp;•&nbsp; Daalarna Garden, Szentendre</p>
       </div>
 
       <div className="wrap">
@@ -377,7 +379,7 @@ export default function RsvpPage() {
             </div>
 
             <div className={'menu-card' + (attending === true ? ' open' : '')}>
-              <p style={{fontSize: '13px', color: '#8a7d6c', fontStyle: 'italic', margin: '28px 0 20px'}}>Fogásonként külön-külön választhatsz — bátran kombinálhatod a hagyományos és a vegán opciókat.</p>
+              <p style={{fontSize: '13px', color: 'var(--wine)', fontStyle: 'italic', margin: '28px 0 20px'}}>Fogásonként külön-külön választhatsz — bátran kombinálhatod a hagyományos és a vegán opciókat.</p>
 
               <div className="course-block">
                 <label className="field-label">Előétel</label>
