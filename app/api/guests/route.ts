@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@vercel/postgres'
+import { createHash, timingSafeEqual } from 'crypto'
+
+const ADMIN_TOKEN_HASH = 'd01c18aff37f7ad9bb77d01e3222e4c6bb1a9c4987ebaae8e20c10a270651e4e'
 
 function isAuthorized(request: NextRequest) {
-  const adminToken = process.env.ADMIN_TOKEN
-  if (!adminToken) return false
   const provided = request.headers.get('x-admin-token')
-  return provided === adminToken
+  if (!provided) return false
+  const providedHash = createHash('sha256').update(provided).digest()
+  const expectedHash = Buffer.from(ADMIN_TOKEN_HASH, 'hex')
+  return providedHash.length === expectedHash.length && timingSafeEqual(providedHash, expectedHash)
 }
 
 async function initDatabase() {
