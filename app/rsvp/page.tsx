@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
+type MenuType = 'A' | 'B'
+
 type Choices = {
-  starter: string | null
-  soup: string | null
-  main: string | null
+  menuType: MenuType | null
+  mainCourse: string | null
 }
 
 type GuestRecord = {
@@ -22,6 +23,18 @@ type GuestRecord = {
 }
 
 const DESSERT = 'Étcsokoládé mousse sárgabarackkal és levendulával'
+
+const MENU_A_STARTER = 'Kacsamáj terrine, fonott kaláccsal és Tokaji aszú géllel'
+const MENU_A_SOUP = 'Újházi tyúkhúsleves, vele főtt zöldségekkel és házi tésztával'
+const MENU_A_MAINS = [
+  'Roston sült tőkehal filé, karfiollal, beluga lencsével, citrusos mángolddal és fehérboros kapormártással',
+  'Érlelt marha bélszín, grillezett nyári zöldségekkel, erdei gombákkal és vörösboros jus-vel',
+  'Csirkemell krumplipürével, bébi zöldségekkel és jus-vel',
+]
+
+const MENU_B_STARTER = 'Füstölt padlizsánkrém, paprika carpaccióval, pirított tökmaggal és lencseropogóssal'
+const MENU_B_SOUP = 'Fehérspárga velouté, marinált zöldspárgával és puffasztott hajdinával'
+const MENU_B_MAIN = 'Faszénen sült zeller steak, grillezett nyári zöldségekkel és vörösboros jus-vel'
 
 async function apiSet(key: string, value: string) {
   const res = await fetch('/api/guests', {
@@ -120,7 +133,7 @@ export default function RsvpPage() {
   const [name, setName] = useState('')
   const [allergies, setAllergies] = useState('')
   const [attending, setAttending] = useState<boolean | null>(null)
-  const [choices, setChoices] = useState<Choices>({ starter: null, soup: null, main: null })
+  const [choices, setChoices] = useState<Choices>({ menuType: null, mainCourse: null })
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -158,13 +171,18 @@ export default function RsvpPage() {
   function selectAttend(val: boolean) {
     setAttending(val)
     if (!val) {
-      setChoices({ starter: null, soup: null, main: null })
+      setChoices({ menuType: null, mainCourse: null })
     }
     setError('')
   }
 
-  function selectOption(group: keyof Choices, value: string) {
-    setChoices((prev) => ({ ...prev, [group]: value }))
+  function selectMenuType(type: MenuType) {
+    setChoices({ menuType: type, mainCourse: null })
+    setError('')
+  }
+
+  function selectMainCourse(value: string) {
+    setChoices((prev) => ({ ...prev, mainCourse: value }))
     setError('')
   }
 
@@ -181,20 +199,23 @@ export default function RsvpPage() {
       return
     }
     if (attending === true) {
-      if (!choices.starter) { setError('Kérjük, válassz előételt.'); return }
-      if (!choices.soup) { setError('Kérjük, válassz levest.'); return }
-      if (!choices.main) { setError('Kérjük, válassz főételt.'); return }
+      if (!choices.menuType) { setError('Kérjük, válassz menüt.'); return }
+      if (choices.menuType === 'A' && !choices.mainCourse) { setError('Kérjük, válassz főételt.'); return }
     }
 
     setSubmitting(true)
     setError('')
 
+    const menuStarter = choices.menuType === 'A' ? MENU_A_STARTER : choices.menuType === 'B' ? MENU_B_STARTER : null
+    const menuSoup = choices.menuType === 'A' ? MENU_A_SOUP : choices.menuType === 'B' ? MENU_B_SOUP : null
+    const menuMain = choices.menuType === 'A' ? choices.mainCourse : choices.menuType === 'B' ? MENU_B_MAIN : null
+
     const record: GuestRecord = {
       name: trimmedName,
       attending,
-      starter: attending ? choices.starter : null,
-      soup: attending ? choices.soup : null,
-      mainCourse: attending ? choices.main : null,
+      starter: attending ? menuStarter : null,
+      soup: attending ? menuSoup : null,
+      mainCourse: attending ? menuMain : null,
       dessert: attending ? DESSERT : null,
       allergies: trimmedAllergies || null,
       submittedAt: new Date().toISOString()
@@ -379,113 +400,68 @@ export default function RsvpPage() {
             </div>
 
             <div className={'menu-card' + (attending === true ? ' open' : '')}>
-              <p style={{fontSize: '13px', color: 'var(--wine)', fontStyle: 'italic', margin: '28px 0 20px'}}>Fogásonként külön-külön választhatsz — bátran kombinálhatod a hagyományos és a vegán opciókat.</p>
-
               <div className="course-block">
-                <label className="field-label">Előétel</label>
-                <div className="main-options" role="radiogroup" aria-label="Előétel">
+                <label className="field-label">Menü</label>
+                <div className="main-options" role="radiogroup" aria-label="Menü">
                   <div
-                    className={'main-option' + (choices.starter === 'Kacsamáj terrine' ? ' selected' : '')}
+                    className={'main-option' + (choices.menuType === 'A' ? ' selected' : '')}
                     role="radio"
-                    aria-checked={choices.starter === 'Kacsamáj terrine'}
+                    aria-checked={choices.menuType === 'A'}
                     tabIndex={0}
-                    onClick={() => selectOption('starter', 'Kacsamáj terrine')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption('starter', 'Kacsamáj terrine') } }}
+                    onClick={() => selectMenuType('A')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectMenuType('A') } }}
                   >
-                    <div className="main-option-head"><span className="radio-dot"></span> Kacsamáj terrine</div>
-                    <div className="main-option-detail"><p className="course-text">Fonott kaláccsal és Tokaji aszú géllel</p></div>
+                    <div className="main-option-head"><span className="radio-dot"></span> A Menü</div>
+                    <div className="main-option-detail">
+                      <p className="course-label" style={{marginTop: 0}}>Előétel</p>
+                      <p className="course-text">{MENU_A_STARTER}</p>
+                      <p className="course-label">Leves</p>
+                      <p className="course-text">{MENU_A_SOUP}</p>
+                      <p className="course-label">Főétel — választható</p>
+                      <p className="course-text">{MENU_A_MAINS.join(' / ')}</p>
+                    </div>
                   </div>
                   <div
-                    className={'main-option' + (choices.starter === 'Füstölt padlizsánkrém (vegán)' ? ' selected' : '')}
+                    className={'main-option' + (choices.menuType === 'B' ? ' selected' : '')}
                     role="radio"
-                    aria-checked={choices.starter === 'Füstölt padlizsánkrém (vegán)'}
+                    aria-checked={choices.menuType === 'B'}
                     tabIndex={0}
-                    onClick={() => selectOption('starter', 'Füstölt padlizsánkrém (vegán)')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption('starter', 'Füstölt padlizsánkrém (vegán)') } }}
+                    onClick={() => selectMenuType('B')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectMenuType('B') } }}
                   >
-                    <div className="main-option-head"><span className="radio-dot"></span> Füstölt padlizsánkrém <span className="tag">VEGÁN</span> <span className="tag">GM</span></div>
-                    <div className="main-option-detail"><p className="course-text">Paprika carpaccióval, pirított tökmaggal és lencseropogóssal</p></div>
+                    <div className="main-option-head"><span className="radio-dot"></span> B Menü <span className="tag">VEGÁN</span></div>
+                    <div className="main-option-detail">
+                      <p className="course-label" style={{marginTop: 0}}>Előétel</p>
+                      <p className="course-text">{MENU_B_STARTER}</p>
+                      <p className="course-label">Leves</p>
+                      <p className="course-text">{MENU_B_SOUP}</p>
+                      <p className="course-label">Főétel</p>
+                      <p className="course-text">{MENU_B_MAIN}</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="course-block">
-                <label className="field-label">Leves</label>
-                <div className="main-options" role="radiogroup" aria-label="Leves">
-                  <div
-                    className={'main-option' + (choices.soup === 'Újházi tyúkhúsleves' ? ' selected' : '')}
-                    role="radio"
-                    aria-checked={choices.soup === 'Újházi tyúkhúsleves'}
-                    tabIndex={0}
-                    onClick={() => selectOption('soup', 'Újházi tyúkhúsleves')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption('soup', 'Újházi tyúkhúsleves') } }}
-                  >
-                    <div className="main-option-head"><span className="radio-dot"></span> Újházi tyúkhúsleves <span className="tag">LM</span></div>
-                    <div className="main-option-detail"><p className="course-text">Vele főtt zöldségekkel és házi tésztával</p></div>
-                  </div>
-                  <div
-                    className={'main-option' + (choices.soup === 'Fehérspárga veluté (vegán)' ? ' selected' : '')}
-                    role="radio"
-                    aria-checked={choices.soup === 'Fehérspárga veluté (vegán)'}
-                    tabIndex={0}
-                    onClick={() => selectOption('soup', 'Fehérspárga veluté (vegán)')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption('soup', 'Fehérspárga veluté (vegán)') } }}
-                  >
-                    <div className="main-option-head"><span className="radio-dot"></span> Fehérspárga veluté <span className="tag">VEGÁN</span> <span className="tag">GM</span></div>
-                    <div className="main-option-detail"><p className="course-text">Marinált zöldspárgával és puffasztott hajdinával</p></div>
+              {choices.menuType === 'A' && (
+                <div className="course-block">
+                  <label className="field-label">Főétel választása</label>
+                  <div className="main-options" role="radiogroup" aria-label="Főétel">
+                    {MENU_A_MAINS.map((option) => (
+                      <div
+                        key={option}
+                        className={'main-option' + (choices.mainCourse === option ? ' selected' : '')}
+                        role="radio"
+                        aria-checked={choices.mainCourse === option}
+                        tabIndex={0}
+                        onClick={() => selectMainCourse(option)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectMainCourse(option) } }}
+                      >
+                        <div className="main-option-head"><span className="radio-dot"></span> {option}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-
-              <div className="course-block">
-                <label className="field-label">Főétel</label>
-                <div className="main-options" role="radiogroup" aria-label="Főétel">
-                  <div
-                    className={'main-option' + (choices.main === 'Roston sült tőkehal filé' ? ' selected' : '')}
-                    role="radio"
-                    aria-checked={choices.main === 'Roston sült tőkehal filé'}
-                    tabIndex={0}
-                    onClick={() => selectOption('main', 'Roston sült tőkehal filé')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption('main', 'Roston sült tőkehal filé') } }}
-                  >
-                    <div className="main-option-head"><span className="radio-dot"></span> Roston sült tőkehal filé <span className="tag">GM</span></div>
-                    <div className="main-option-detail"><p className="course-text">Karfiollal, beluga lencsével, citrusos mángolddal és fehérboros kapormártással</p></div>
-                  </div>
-                  <div
-                    className={'main-option' + (choices.main === 'Érlelt marha bélszín' ? ' selected' : '')}
-                    role="radio"
-                    aria-checked={choices.main === 'Érlelt marha bélszín'}
-                    tabIndex={0}
-                    onClick={() => selectOption('main', 'Érlelt marha bélszín')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption('main', 'Érlelt marha bélszín') } }}
-                  >
-                    <div className="main-option-head"><span className="radio-dot"></span> Érlelt marha bélszín <span className="tag">GM</span> <span className="tag">LM</span></div>
-                    <div className="main-option-detail"><p className="course-text">Grillezett nyári zöldségekkel, erdei gombákkal és vörösboros jus-vel</p></div>
-                  </div>
-                  <div
-                    className={'main-option' + (choices.main === 'Chicken Supreme' ? ' selected' : '')}
-                    role="radio"
-                    aria-checked={choices.main === 'Chicken Supreme'}
-                    tabIndex={0}
-                    onClick={() => selectOption('main', 'Chicken Supreme')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption('main', 'Chicken Supreme') } }}
-                  >
-                    <div className="main-option-head"><span className="radio-dot"></span> Chicken Supreme</div>
-                    <div className="main-option-detail"><p className="course-text">Csirkemell szupreme</p></div>
-                  </div>
-                  <div
-                    className={'main-option' + (choices.main === 'Faszénen sült zeller steak (vegán)' ? ' selected' : '')}
-                    role="radio"
-                    aria-checked={choices.main === 'Faszénen sült zeller steak (vegán)'}
-                    tabIndex={0}
-                    onClick={() => selectOption('main', 'Faszénen sült zeller steak (vegán)')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption('main', 'Faszénen sült zeller steak (vegán)') } }}
-                  >
-                    <div className="main-option-head"><span className="radio-dot"></span> Faszénen sült zeller steak <span className="tag">VEGÁN</span> <span className="tag">GM</span></div>
-                    <div className="main-option-detail"><p className="course-text">Grillezett nyári zöldségekkel és vörösboros jus-vel</p></div>
-                  </div>
-                </div>
-              </div>
+              )}
 
               <div className="printed-menu" style={{marginTop: '8px'}}>
                 <p className="course-label" style={{marginTop: 0}}>Desszert <span className="tag">VEGÁN</span> <span className="tag">GM</span></p>
