@@ -75,18 +75,9 @@ export async function GET(request: NextRequest) {
     const key = searchParams.get('key')
     const list = searchParams.get('list') === 'true'
     const verify = searchParams.get('verify') === 'true'
-    const wipe = searchParams.get('wipe') === 'true'
 
     if (verify) {
       return NextResponse.json({ authorized: isAuthorized(request) })
-    }
-
-    if (wipe) {
-      if (!isValidToken(searchParams.get('token'))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-      const result = await sql`DELETE FROM guests WHERE key LIKE 'guest:%'`
-      return NextResponse.json({ deleted: result.rowCount })
     }
 
     if (list) {
