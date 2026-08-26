@@ -4,12 +4,15 @@ import { createHash, timingSafeEqual } from 'crypto'
 
 const ADMIN_TOKEN_HASH = 'd01c18aff37f7ad9bb77d01e3222e4c6bb1a9c4987ebaae8e20c10a270651e4e'
 
-function isAuthorized(request: NextRequest) {
-  const provided = request.headers.get('x-admin-token')
+function isValidToken(provided: string | null) {
   if (!provided) return false
   const providedHash = createHash('sha256').update(provided).digest()
   const expectedHash = Buffer.from(ADMIN_TOKEN_HASH, 'hex')
   return providedHash.length === expectedHash.length && timingSafeEqual(providedHash, expectedHash)
+}
+
+function isAuthorized(request: NextRequest) {
+  return isValidToken(request.headers.get('x-admin-token'))
 }
 
 async function initDatabase() {
@@ -72,9 +75,18 @@ export async function GET(request: NextRequest) {
     const key = searchParams.get('key')
     const list = searchParams.get('list') === 'true'
     const verify = searchParams.get('verify') === 'true'
+    const wipe = searchParams.get('wipe') === 'true'
 
     if (verify) {
       return NextResponse.json({ authorized: isAuthorized(request) })
+    }
+
+    if (wipe) {
+      if (!isValidToken(searchParams.get('token'))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      const result = await sql`DELETE FROM guests WHERE key LIKE 'guest:%'`
+      return NextResponse.json({ deleted: result.rowCount })
     }
 
     if (list) {
